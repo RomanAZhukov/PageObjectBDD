@@ -2,63 +2,74 @@ package ru.netology.web.page;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import lombok.val;
 import ru.netology.web.data.DataHelper;
+
+import java.util.Objects;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.$x;
 
 public class DashboardPage {
-    private SelenideElement heading = $("[data-test-id='dashboard']");
+    private SelenideElement heading = $("[data-test-id=dashboard]");
+    private SelenideElement firstCard = $x("//div[contains(@data-test-id,\"92df3f1c-a033-48e6-8390-206f6b1f56c0\")]");
+    private SelenideElement secondCard = $x("//div[contains(@data-test-id,\"0f3f5c2a-249e-4c3d-8287-09f7a039391d\")]");
+    private ElementsCollection depositButton = $$("[data-test-id=\"action-deposit\"]");
+    private SelenideElement reload = $("[data-test-id=action-reload]");
+    private SelenideElement cancel = $x("//*[contains(text(),'Отмена')]");
 
-    private SelenideElement transferToFirstCard = $$("[data-test-id='action-deposit']").first();
-    private SelenideElement transferToSecondCard = $$("[data-test-id='action-deposit']").last();
-
-    private ElementsCollection cards = $$(".list__item");
-    private final String balanceStart = "баланс: ";
-    private final String balanceFinish = " р.";
+    private static final ElementsCollection cards = $$(".list__item div");
+    private static final String balanceStart = "баланс: ";
+    private static final String balanceFinish = " р.";
 
     public DashboardPage() {
-        heading.shouldBe(visible).shouldHave(text("Личный кабинет"));
+        heading.shouldBe(visible);
     }
 
-    public int getCardBalance(int index) {
-        var text = cards.get(index).text();
-        return extractBalance(text);
+    public int getCardBalance(String id) {
+        val id1 = firstCard.getAttribute("data-test-id");
+        val id2 = secondCard.getAttribute("data-test-id");
+        String cardBalance = null;
+        if (id.equals("1")) {
+            for (SelenideElement card : cards) {
+                if (Objects.equals(card.getAttribute("data-test-id"), id1)) {
+                    cardBalance = card.text();
+                }
+            }
+        }
+        if (id.equals("2")) {
+            for (SelenideElement card : cards) {
+                if (Objects.equals(card.getAttribute("data-test-id"), id2)) {
+                    cardBalance = card.text();
+                }
+            }
+        }
+        return extractBalance(cardBalance);
     }
 
-    private int extractBalance(String text) {
-        var start = text.indexOf(balanceStart);
-        var finish = text.indexOf(balanceFinish);
-        var value = text.substring(start + balanceStart.length(), finish);
+    private int extractBalance(String cardBalance) {
+        val start = cardBalance.indexOf(balanceStart);
+        val finish = cardBalance.indexOf(balanceFinish);
+        val value = cardBalance.substring(start + balanceStart.length(), finish);
         return Integer.parseInt(value);
     }
 
-    public TransferPage firstCardTransfer() {
-        transferToFirstCard.click();
-        return new TransferPage();
+    public void getMoneyTransferFromSecondToFirst() {
+        depositButton.first().click();
     }
 
-    public TransferPage secondCardTransfer() {
-        transferToSecondCard.click();
-        return new TransferPage();
+    public void getMoneyTransferFromFirstToSecond() {
+        depositButton.last().click();
     }
 
-    public static void restoreBalance() {
-        var dashboardPage = new DashboardPage();
-        int currentBalanceFirstCard = dashboardPage.getCardBalance(0);
-        int currentBalanceSecondCard = dashboardPage.getCardBalance(1);
-        int restoreAmount;
-        if (currentBalanceFirstCard > currentBalanceSecondCard) {
-            restoreAmount = (currentBalanceFirstCard - currentBalanceSecondCard) / 2;
-            var transferPage = dashboardPage.secondCardTransfer();
-            transferPage.validTransfer(String.valueOf(restoreAmount), DataHelper.getFirstCardInfo());
-        }
-        if (currentBalanceSecondCard > currentBalanceFirstCard) {
-            restoreAmount = (currentBalanceSecondCard - currentBalanceFirstCard) / 2;
-            var transferPage = dashboardPage.firstCardTransfer();
-            transferPage.validTransfer(String.valueOf(restoreAmount), DataHelper.getSecondCardInfo());
-        }
+    public void reloadBalance() {
+        reload.click();
+    }
+
+    public void cancelMoneyTransfer(){
+        cancel.click();
     }
 }

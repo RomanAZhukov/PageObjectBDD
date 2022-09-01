@@ -1,85 +1,114 @@
 package ru.netology.web.test;
 
-import org.junit.jupiter.api.AfterEach;
+import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Configuration;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 import ru.netology.web.data.DataHelper;
 import ru.netology.web.page.DashboardPage;
 import ru.netology.web.page.LoginPage;
+import ru.netology.web.page.TransferPage;
 
 import static com.codeborne.selenide.Selenide.open;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-public class TransferTest {
+class TransferTest {
     @BeforeEach
-    public void setUp() {
-        var loginPage = open("http://localhost:9999", LoginPage.class);
+    void setup() {
+        open("http://localhost:9999");
+        var loginPage = new LoginPage();
         var authInfo = DataHelper.getAuthInfo();
         var verificationPage = loginPage.validLogin(authInfo);
         var verificationCode = DataHelper.getVerificationCodeFor(authInfo);
-        var dashboardPage = verificationPage.validVerify(verificationCode);
+        verificationPage.validVerify(verificationCode);
+        Configuration.holdBrowserOpen = true;
     }
 
-    @AfterEach
-    public void restoreCards() {
-        DashboardPage.restoreBalance();
+    private String intToString(int cardBalance) {
+        return Integer.toString(cardBalance);
     }
 
-    @ParameterizedTest
-    @CsvSource(value = {"transferAmountLessThanStartBalance,5000",
-            "transferAmountEqualsStartBalance,10000"})
-    void shouldTransferFromSecondToFirstCard(String testcase, String amount) {
+    @Test
+    void shouldTransferMoneyFromSecondCardToFirstCard() {
         var dashboardPage = new DashboardPage();
-        var currentBalanceFirstCard = dashboardPage.getCardBalance(0);
-        var currentBalanceSecondCard = dashboardPage.getCardBalance(1);
-        var transferPage = dashboardPage.firstCardTransfer();
-        transferPage.validTransfer(amount, DataHelper.getSecondCardInfo());
-        assertEquals(currentBalanceFirstCard + Integer.parseInt(amount), dashboardPage.getCardBalance(0));
-        assertEquals(currentBalanceSecondCard - Integer.parseInt(amount), dashboardPage.getCardBalance(1));
+        var moneyTransferPage = new TransferPage();
+
+        int expected = dashboardPage.getCardBalance("1") + 1000;
+
+        dashboardPage.getMoneyTransferFromSecondToFirst();
+        moneyTransferPage.moneyTransfer(DataHelper.getSecondCardInfo(), "1000");
+        int actual = dashboardPage.getCardBalance("1");
+
+        Assertions.assertEquals(expected, actual);
     }
 
-    @ParameterizedTest
-    @CsvSource(value = {"transferAmountLessThanStartBalance,5000",
-            "transferAmountEqualsStartBalance,10000"})
-    void shouldTransferFromFirstToSecondCard(String testcase, String amount) {
+    @Test
+    void shouldTransferMoneyFromFirstCardToSecondCard() {
         var dashboardPage = new DashboardPage();
-        var currentBalanceFirstCard = dashboardPage.getCardBalance(0);
-        var currentBalanceSecondCard = dashboardPage.getCardBalance(1);
-        var cardTransferPage = dashboardPage.secondCardTransfer();
-        cardTransferPage.validTransfer(amount, DataHelper.getFirstCardInfo());
-        assertEquals(currentBalanceFirstCard - Integer.parseInt(amount), dashboardPage.getCardBalance(0));
-        assertEquals(currentBalanceSecondCard + Integer.parseInt(amount), dashboardPage.getCardBalance(1));
+        var moneyTransferPage = new TransferPage();
+
+        int expected = dashboardPage.getCardBalance("2") + 5000;
+
+        dashboardPage.getMoneyTransferFromFirstToSecond();
+        moneyTransferPage.moneyTransfer(DataHelper.getFirstCardInfo(), "5000");
+        int actual = dashboardPage.getCardBalance("2");
+
+        Assertions.assertEquals(expected, actual);
     }
 
-    @ParameterizedTest
-    @CsvSource(value = {"transferFractionPointZeroPlusTwoDigits,'0.45'",
-            "transferFractionPointZeroPlusTwoDigits,'10.4'",
-            "transferFractionByPointZeroPlusTwoDigits,'10.45'"})
-    void shouldTransferFrom2ndTo1stCardAmountWithFraction(String testcase, String amount) {
+    @Test
+    void shouldReloadCardBalance() {
         var dashboardPage = new DashboardPage();
-        var currentBalanceFirstCard = dashboardPage.getCardBalance(0);
-        var currentBalanceSecondCard = dashboardPage.getCardBalance(1);
-        var cardTransferPage = dashboardPage.firstCardTransfer();
-        cardTransferPage.validTransfer(amount, DataHelper.getSecondCardInfo());
-        assertEquals(currentBalanceFirstCard + Float.parseFloat(amount), dashboardPage.getCardBalance(0));
-        assertEquals(currentBalanceSecondCard - Float.parseFloat(amount), dashboardPage.getCardBalance(1));
+        var moneyTransferPage = new TransferPage();
+
+        int expected = dashboardPage.getCardBalance("2");
+
+        dashboardPage.reloadBalance();
+        int actual = dashboardPage.getCardBalance("2");
+
+        Assertions.assertEquals(expected, actual);
     }
 
-    @ParameterizedTest
-    @CsvSource(value = {"transferFractionPointZeroPlusTwoDigits,'0.45'",
-            "transferFractionPointZeroPlusTwoDigits,'10.4'",
-            "transferFractionByPointZeroPlusTwoDigits,'10.45'"})
-    void shouldTransferFrom1stTo2ndCardAmountWithFraction(String testcase, String amount) {
+    @Test
+    void shouldCancelMoneyTransfer() {
         var dashboardPage = new DashboardPage();
-        var currentBalanceFirstCard = dashboardPage.getCardBalance(0);
-        var currentBalanceSecondCard = dashboardPage.getCardBalance(1);
-        var cardTransferPage = dashboardPage.secondCardTransfer();
-        cardTransferPage.validTransfer(amount, DataHelper.getFirstCardInfo());
-        assertEquals(currentBalanceFirstCard - Float.parseFloat(amount), dashboardPage.getCardBalance(0));
-        assertEquals(currentBalanceSecondCard + Float.parseFloat(amount), dashboardPage.getCardBalance(1));
+        var moneyTransferPage = new TransferPage();
+
+        int expected = dashboardPage.getCardBalance("2");
+
+        dashboardPage.getMoneyTransferFromSecondToFirst();
+        dashboardPage.cancelMoneyTransfer();
+        int actual = dashboardPage.getCardBalance("2");
+
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldNotTransferIfAccountIsNotSpecified() {
+        var dashboardPage = new DashboardPage();
+        var moneyTransferPage = new TransferPage();
+
+        dashboardPage.getMoneyTransferFromSecondToFirst();
+        moneyTransferPage.moneyTransferWithKnownMistake("", "1000");
+
+        moneyTransferPage.getError().shouldBe(Condition.visible);
+    }
+
+    @Test
+    void shouldTransferFullAmountFromAccount() {
+        var dashboardPage = new DashboardPage();
+        var transferPage = new TransferPage();
+        String balance = intToString(dashboardPage.getCardBalance("1"));
+
+        int expected = 0;
+
+        dashboardPage.getMoneyTransferFromFirstToSecond();
+        transferPage.moneyTransfer(DataHelper.getFirstCardInfo(), balance);
+        int actual = dashboardPage.getCardBalance("1");
+
+        Assertions.assertEquals(expected, actual);
     }
 }
+
 
 
