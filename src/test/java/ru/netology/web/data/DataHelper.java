@@ -31,16 +31,14 @@ public class DataHelper {
         String number;
     }
 
-    public static CardInfo getFirstCardInfo() {
-        return new CardInfo("5559 0000 0000 0001");
-    }
-
-    public static CardInfo getSecondCardInfo() {
-        return new CardInfo("5559 0000 0000 0002");
-    }
-
-    public static CardInfo getInvalidCardInfo() {
-        Faker faker = new Faker();
-        return new CardInfo(faker.business().creditCardNumber());
+    public static CardInfo getCard(String id) {
+        CardInfo cardInfo = new CardInfo(null);
+        if (id.equals("1")) {
+            return cardInfo = new CardInfo("5559000000000001");
+        }
+        if (id.equals("2")) {
+            return cardInfo = new CardInfo("5559000000000002");
+        }
+        return cardInfo;
     }
 }

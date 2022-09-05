@@ -31,30 +31,33 @@ class TransferTest {
     @Test
     void shouldTransferMoneyFromSecondCardToFirstCard() {
         var dashboardPage = new DashboardPage();
-        var moneyTransferPage = new TransferPage();
-
         int expected = dashboardPage.getCardBalance("1") + 1000;
-
-        dashboardPage.getMoneyTransferFromSecondToFirst();
-        moneyTransferPage.moneyTransfer(DataHelper.getSecondCardInfo(), "1000");
+        int expected1 = dashboardPage.getCardBalance("2") - 1000;
+        dashboardPage.depositToFirst();
+        var transferPage = new TransferPage();
+        transferPage.moneyTransfer(DataHelper.getCard("2"), "1000");
         int actual = dashboardPage.getCardBalance("1");
+        int actual1 = dashboardPage.getCardBalance("2");
 
         Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected1, actual1);
     }
 
     @Test
     void shouldTransferMoneyFromFirstCardToSecondCard() {
         var dashboardPage = new DashboardPage();
-        var moneyTransferPage = new TransferPage();
-
-        int expected = dashboardPage.getCardBalance("2") + 5000;
-
-        dashboardPage.getMoneyTransferFromFirstToSecond();
-        moneyTransferPage.moneyTransfer(DataHelper.getFirstCardInfo(), "5000");
+        int expected = dashboardPage.getCardBalance("2") + 1000;
+        int expected1 = dashboardPage.getCardBalance("1") - 1000;
+        dashboardPage.depositToSecond();
+        var transferPage = new TransferPage();
+        transferPage.moneyTransfer(DataHelper.getCard("1"), "1000");
         int actual = dashboardPage.getCardBalance("2");
+        int actual1 = dashboardPage.getCardBalance("1");
 
         Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected1, actual1);
     }
+
 
     @Test
     void shouldReloadCardBalance() {
@@ -72,42 +75,51 @@ class TransferTest {
     @Test
     void shouldCancelMoneyTransfer() {
         var dashboardPage = new DashboardPage();
-        var moneyTransferPage = new TransferPage();
 
-        int expected = dashboardPage.getCardBalance("2");
+        int expected = dashboardPage.getCardBalance("1");
+        int expected1 = dashboardPage.getCardBalance("2");
 
-        dashboardPage.getMoneyTransferFromSecondToFirst();
+        dashboardPage.depositToFirst();
         dashboardPage.cancelMoneyTransfer();
-        int actual = dashboardPage.getCardBalance("2");
+
+        int actual = dashboardPage.getCardBalance("1");
+        int actual1 = dashboardPage.getCardBalance("2");
 
         Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected1, actual1);
     }
 
     @Test
     void shouldNotTransferIfAccountIsNotSpecified() {
         var dashboardPage = new DashboardPage();
+
+        dashboardPage.depositToFirst();
         var moneyTransferPage = new TransferPage();
+        moneyTransferPage.moneyTransfer(DataHelper.getCard(""), "1000");
 
-        dashboardPage.getMoneyTransferFromSecondToFirst();
-        moneyTransferPage.moneyTransferWithKnownMistake("", "1000");
-
-        moneyTransferPage.getError().shouldBe(Condition.visible);
+        moneyTransferPage.getError();
     }
+
 
     @Test
     void shouldTransferFullAmountFromAccount() {
         var dashboardPage = new DashboardPage();
-        var transferPage = new TransferPage();
-        String balance = intToString(dashboardPage.getCardBalance("1"));
+        String balance = String.valueOf(dashboardPage.getCardBalance("1") + 100);
 
-        int expected = 0;
+        int expected = dashboardPage.getCardBalance("1");
+        int expected1 = dashboardPage.getCardBalance("2");
 
-        dashboardPage.getMoneyTransferFromFirstToSecond();
-        transferPage.moneyTransfer(DataHelper.getFirstCardInfo(), balance);
+        dashboardPage.depositToSecond();
+        var moneyTransferPage = new TransferPage();
+        moneyTransferPage.moneyTransfer(DataHelper.getCard("1"), balance);
+
         int actual = dashboardPage.getCardBalance("1");
+        int actual1 = dashboardPage.getCardBalance("2");
 
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertNotEquals(expected, actual);
+        Assertions.assertNotEquals(expected1, actual1);
     }
+
 }
 
 
